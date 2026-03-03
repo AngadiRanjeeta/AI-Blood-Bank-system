@@ -79,6 +79,7 @@ Then run: app/models/tables.sql
 python -m uvicorn app.main:app --reload  
 
 ## 🌐 Open in Browser
+###localhost
 Main UI: http://127.0.0.1:8000/  
 Swagger Docs: http://127.0.0.1:8000/docs  
 Analytics Dashboard: http://127.0.0.1:8000/analytics  
