@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Blood Bank</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/static/style.css" rel="stylesheet">
+
+  <!-- Leaflet (Free Map) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+</head>
+
+<body class="bg-soft">
+  <div class="container py-5">
+    <div class="mx-auto" style="max-width: 980px;">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+          <h1 class="h3 mb-1">🩸 AI Emergency Blood Allocation</h1>
+          <div class="text-muted">
+            Find the best hospital based on <b>distance</b>, <b>availability</b>, and <b>urgency</b>.
+          </div>
+        </div>
+        <span class="badge rounded-pill text-bg-dark px-3 py-2">
+          FastAPI + MySQL + SQL + Map
+        </span>
+      </div>
+
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-4 p-md-5">
+
+          <form id="form" class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Blood Group</label>
+              <select id="bg" class="form-select" required>
+                <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Urgency</label>
+              <select id="urgency" class="form-select" required>
+                <option value="critical">Critical</option>
+                <option value="high" selected>High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Latitude</label>
+              <input id="lat" type="number" step="0.000001" class="form-control" placeholder="12.9716" required>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Longitude</label>
+              <input id="lon" type="number" step="0.000001" class="form-control" placeholder="77.5946" required>
+            </div>
+
+            <div class="col-12 d-flex flex-wrap gap-2 align-items-center">
+              <button class="btn btn-primary px-4" type="submit">Find Best Hospital</button>
+
+              <button class="btn btn-outline-primary" type="button" id="useMyLoc">📍 Use My Location</button>
+
+              <!-- City sample buttons -->
+              <button class="btn btn-outline-secondary" type="button" id="fillBLR">Bangalore</button>
+              <button class="btn btn-outline-secondary" type="button" id="fillDEL">Delhi</button>
+              <button class="btn btn-outline-secondary" type="button" id="fillMUM">Mumbai</button>
+              <button class="btn btn-outline-secondary" type="button" id="fillCHE">Chennai</button>
+
+              <div class="ms-auto small text-muted" id="status"></div>
+            </div>
+          </form>
+
+          <hr class="my-4">
+
+          <div id="map" class="map-box mb-3"></div>
+
+          <div id="result"></div>
+
+        </div>
+      </div>
+
+      <div class="text-center text-muted small mt-3">
+        Tip: Use “📍 Use My Location” or city buttons to test multi-city matching.
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const resultEl = document.getElementById("result");
+
+    let map, userMarker;
+    let hospitalMarkers = [];
+
+    function initMap(lat = 12.9716, lon = 77.5946) {
+      if (map) return;
+      map = L.map("map").setView([lat, lon], 11);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19
+      }).addTo(map);
+    }
+
+    function clearHospitalMarkers() {
+      if (!map) return;
+      hospitalMarkers.forEach(m => map.removeLayer(m));
+      hospitalMarkers = [];
+    }
+
+    function addUserMarker(lat, lon) {
+      initMap(lat, lon);
+      if (userMarker) map.removeLayer(userMarker);
+      userMarker = L.marker([lat, lon]).addTo(map).bindPopup("Receiver Location").openPopup();
+      map.setView([lat, lon], 11);
+    }
+
+    function addHospitalMarkers(hospitals) {
+      if (!map) return;
+      clearHospitalMarkers();
+
+      hospitals.forEach((h, idx) => {
+        if (h.latitude == null || h.longitude == null) return;
+
+        const m = L.marker([h.latitude, h.longitude])
+          .addTo(map)
+          .bindPopup(
+            `<b>${h.hospital_name}</b><br/>${h.city}
+             <br/>Distance: ${h.distance_km} km
+             <br/>Stock: ${h.stock_units}
+             <br/>Score: ${h.score}`
+          );
+
+        hospitalMarkers.push(m);
+
+        if (idx === 0) m.openPopup();
+      });
+    }
+
+    function setCoords(lat, lon) {
+      document.getElementById("lat").value = lat;
+      document.getElementById("lon").value = lon;
+      addUserMarker(lat, lon);
+    }
+
+    // City sample buttons
+    document.getElementById("fillBLR").addEventListener("click", () => setCoords(12.9716, 77.5946));
+    document.getElementById("fillDEL").addEventListener("click", () => setCoords(28.6139, 77.2090));
+    document.getElementById("fillMUM").addEventListener("click", () => setCoords(19.0760, 72.8777));
+    document.getElementById("fillCHE").addEventListener("click", () => setCoords(13.0827, 80.2707));
+
+    // Use My Location button
+    document.getElementById("useMyLoc").addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        alert("Geolocation not supported in this browser.");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          document.getElementById("lat").value = lat.toFixed(6);
+          document.getElementById("lon").value = lon.toFixed(6);
+          addUserMarker(lat, lon);
+        },
+        () => alert("Location permission denied or unavailable.")
+      );
+    });
+
+    // Init map default
+    initMap();
+
+    // Submit handler
+    document.getElementById("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      statusEl.textContent = "Searching…";
+      resultEl.innerHTML = "";
+
+      const payload = {
+        bg: document.getElementById("bg").value,
+        urgency: document.getElementById("urgency").value,
+        lat: parseFloat(document.getElementById("lat").value),
+        lon: parseFloat(document.getElementById("lon").value),
+      };
+
+      // Show user marker
+      addUserMarker(payload.lat, payload.lon);
+
+      try {
+        const res = await fetch("/find-best", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          statusEl.textContent = "Error";
+          resultEl.innerHTML = `<div class="alert alert-danger">Server error. Check terminal logs.</div>`;
+          return;
+        }
+
+        if (data.message) {
+          statusEl.textContent = "No match";
+          clearHospitalMarkers();
+          resultEl.innerHTML = `<div class="alert alert-warning">${data.message}</div>`;
+          return;
+        }
+
+        statusEl.textContent = "Done ✅";
+
+        const best = data.best;
+        const top5 = data.top5 || [];
+
+        // Add markers for hospitals
+        addHospitalMarkers(top5);
+
+        const rows = top5.map((x, i) => `
+          <tr>
+            <td>${i+1}</td>
+            <td>${x.hospital_name}</td>
+            <td>${x.city}</td>
+            <td>${x.distance_km}</td>
+            <td>${x.stock_units}</td>
+            <td>${x.score}</td>
+          </tr>
+        `).join("");
+
+        resultEl.innerHTML = `
+          <div class="p-3 p-md-4 rounded-4 highlight mb-3">
+            <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+              <div>
+                <div class="text-muted small">Best Match</div>
+                <div class="h5 mb-1">🏥 ${best.hospital_name}</div>
+                <div class="text-muted">
+                  City: ${best.city} · Distance: <b>${best.distance_km} km</b> · Stock: <b>${best.stock_units}</b>
+                </div>
+                <div class="small text-muted mt-2">
+                  Score parts → urgency: ${best.score_parts.urgency_weight},
+                  distance: ${best.score_parts.distance_score},
+                  stock: ${best.score_parts.stock_score}
+                </div>
+              </div>
+              <span class="badge text-bg-success px-3 py-2">Score: ${best.score}</span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Hospital</th>
+                  <th>City</th>
+                  <th>Distance (km)</th>
+                  <th>Stock</th>
+                  <th>Score</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+      } catch (err) {
+        statusEl.textContent = "Error";
+        resultEl.innerHTML = `<div class="alert alert-danger">Fetch failed. Is the server running?</div>`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+.bg-soft { background: #f6f7fb; }
+.rounded-4 { border-radius: 1.25rem; }
+.highlight { background: linear-gradient(135deg, #f1f5ff, #fff); border: 1px solid #e8ecff; }
+
+.map-box {
+  height: 380px;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid #e8ecff;
+  overflow: hidden;
+}
