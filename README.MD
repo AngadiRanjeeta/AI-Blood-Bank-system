@@ -47,7 +47,7 @@ Blood Bank Allocation System built with FastAPI and MySQL that finds the most su
 - **Backend:** FastAPI, SQLAlchemy, PyMySQL
 - **Database:** MySQL
 - **Frontend:** HTML, Bootstrap, Leaflet Map
-- **Charts:** Chart.js
+- **Analytics:** Power BI (interactive dashboard), Chart.js
 - **ML:** scikit-learn (Ridge Regression), joblib
 - **Server:** Uvicorn
 
