@@ -17,6 +17,8 @@ Blood Bank Allocation System built with FastAPI and MySQL that finds the most su
   - Distance score (normalized)
   - Stock score (scaled)
 
+![image alt](https://github.com/AngadiRanjeeta/AI-Blood-Bank-system/blob/4573e1fdf6e6992e1c44d545306ca696eb91b723/blood.png)
+
 ### 🗺️ Map UI (Web)
 - Receiver location marker
 - Hospital markers
