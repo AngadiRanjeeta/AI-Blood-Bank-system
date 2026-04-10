@@ -24,11 +24,12 @@ Blood Bank Allocation System built with FastAPI and MySQL that finds the most su
 - Clean responsive Bootstrap interface
 
 ### 📊 Analytics Dashboard
-- KPI Cards (Hospitals, Stock rows, Requests today)
-- Stock by blood group
-- Requests by blood group
-- Requests by urgency
-- Requests trend (last 14 days)
+- KPI Cards (Total blood units, Requests received, Requests fulfilled)
+- Blood inventory by hospital
+- Blood group distribution
+- Request fulfillment by urgency
+- 14-Day ML demand forecast (Ridge Regression)
+- **Power BI Dashboard** with city-level cross filtering
 
 ### 🤖 ML Demand Forecasting
 - Uses request history from `bloodrequest`
