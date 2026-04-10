@@ -36,6 +36,7 @@ Blood Bank Allocation System built with FastAPI and MySQL that finds the most su
 - Predicts demand for next N days
 - Stores model in `ml/forecast_model.pkl`
 
+![image alt](https://github.com/AngadiRanjeeta/AI-Blood-Bank-system/blob/477afb2308f0e480d7dcd358fc033dc039560b50/1.png)
 ---
 
 ## 🧱 Tech Stack
